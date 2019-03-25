@@ -381,6 +381,10 @@ class Transition extends React.Component {
 
 Transition.propTypes = {
   /**
+   * Capture ref
+   */
+  captureRef: PropTypes.func,
+  /**
    * A `function` child can be used instead of a React element. This function is
    * called with the current transition status (`'entering'`, `'entered'`,
    * `'exiting'`, `'exited'`, `'unmounted'`), which can be used to apply context
