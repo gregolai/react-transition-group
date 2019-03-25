@@ -1,6 +1,5 @@
 import * as PropTypes from 'prop-types'
 import React from 'react'
-import ReactDOM from 'react-dom'
 import { polyfill } from 'react-lifecycles-compat'
 
 import { timeoutsShape } from './utils/PropTypes'
@@ -218,12 +217,11 @@ class Transition extends React.Component {
     if (nextStatus !== null) {
       // nextStatus will always be ENTERING or EXITING.
       this.cancelNextCallback()
-      const node = ReactDOM.findDOMNode(this)
 
       if (nextStatus === ENTERING) {
-        this.performEnter(node, mounting)
+        this.performEnter(this.node, mounting)
       } else {
-        this.performExit(node)
+        this.performExit(this.node)
       }
     } else if (this.props.unmountOnExit && this.state.status === EXITED) {
       this.setState({ status: UNMOUNTED })
@@ -247,14 +245,16 @@ class Transition extends React.Component {
       return
     }
 
-    this.props.onEnter(node, appearing)
+    this.props.onEnter(node, appearing).then(() => {
 
-    this.safeSetState({ status: ENTERING }, () => {
-      this.props.onEntering(node, appearing)
+      this.safeSetState({ status: ENTERING }, () => {
+        this.props.onEntering(node, appearing).then(() => {
 
-      this.onTransitionEnd(node, enterTimeout, () => {
-        this.safeSetState({ status: ENTERED }, () => {
-          this.props.onEntered(node, appearing)
+          this.onTransitionEnd(node, enterTimeout, () => {
+            this.safeSetState({ status: ENTERED }, () => {
+              this.props.onEntered(node, appearing)
+            })
+          })
         })
       })
     })
@@ -271,14 +271,16 @@ class Transition extends React.Component {
       })
       return
     }
-    this.props.onExit(node)
 
-    this.safeSetState({ status: EXITING }, () => {
-      this.props.onExiting(node)
+    this.props.onExit(node).then(() => {
+      this.safeSetState({ status: EXITING }, () => {
+        this.props.onExiting(node).then(() => {
 
-      this.onTransitionEnd(node, timeouts.exit, () => {
-        this.safeSetState({ status: EXITED }, () => {
-          this.props.onExited(node)
+          this.onTransitionEnd(node, timeouts.exit, () => {
+            this.safeSetState({ status: EXITED }, () => {
+              this.props.onExited(node)
+            })
+          })
         })
       })
     })
@@ -336,6 +338,11 @@ class Transition extends React.Component {
     }
   }
 
+  captureRef = ref => {
+    this.node = ref;
+    this.props.captureRef(ref);
+  };
+
   render() {
     const status = this.state.status
     if (status === UNMOUNTED) {
@@ -358,13 +365,17 @@ class Transition extends React.Component {
     delete childProps.onExit
     delete childProps.onExiting
     delete childProps.onExited
+    delete childProps.captureRef
 
     if (typeof children === 'function') {
       return children(status, childProps)
     }
 
     const child = React.Children.only(children)
-    return React.cloneElement(child, childProps)
+    return React.cloneElement(child, {
+      ...childProps,
+      ref: this.captureRef
+    })
   }
 }
 
@@ -522,6 +533,7 @@ Transition.propTypes = {
 function noop() {}
 
 Transition.defaultProps = {
+  captureRef: noop,
   in: false,
   mountOnEnter: false,
   unmountOnExit: false,
