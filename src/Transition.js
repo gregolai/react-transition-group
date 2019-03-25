@@ -245,10 +245,20 @@ class Transition extends React.Component {
       return
     }
 
-    this.props.onEnter(node, appearing).then(() => {
+    let promise = this.props.onEnter(node, appearing)
+    if (typeof promise !== 'object') {
+      promise = Promise.resolve()
+    }
+
+    promise.then(() => {
 
       this.safeSetState({ status: ENTERING }, () => {
-        this.props.onEntering(node, appearing).then(() => {
+        promise = this.props.onEntering(node, appearing);
+        if (typeof promise !== 'object') {
+          promise = Promise.resolve()
+        }
+
+        promise.then(() => {
 
           this.onTransitionEnd(node, enterTimeout, () => {
             this.safeSetState({ status: ENTERED }, () => {
@@ -272,9 +282,19 @@ class Transition extends React.Component {
       return
     }
 
-    this.props.onExit(node).then(() => {
+    let promise = this.props.onExit(node)
+    if (typeof promise !== 'object') {
+      promise = Promise.resolve();
+    }
+
+    promise.then(() => {
       this.safeSetState({ status: EXITING }, () => {
-        this.props.onExiting(node).then(() => {
+        promise = this.props.onExiting(node)
+        if (typeof promise !== 'object') {
+          promise = Promise.resolve()
+        }
+
+        promise.then(() => {
 
           this.onTransitionEnd(node, timeouts.exit, () => {
             this.safeSetState({ status: EXITED }, () => {
