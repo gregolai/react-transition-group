@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import * as PropTypes from 'prop-types'
 import React from 'react'
 import { polyfill } from 'react-lifecycles-compat'
@@ -9,6 +10,9 @@ export const EXITED = 'exited'
 export const ENTERING = 'entering'
 export const ENTERED = 'entered'
 export const EXITING = 'exiting'
+
+const isPromise = obj => typeof obj === 'object' &&
+  typeof obj.then === 'function'
 
 /**
  * The Transition component lets you describe a transition from one component
@@ -245,20 +249,15 @@ class Transition extends React.Component {
       return
     }
 
-    let promise = this.props.onEnter(node, appearing)
-    if (typeof promise !== 'object') {
-      promise = Promise.resolve()
+    const handleNext = (maybePromise, callback) => {
+      if (isPromise(maybePromise)) maybePromise.then(callback)
+      else callback()
     }
 
-    promise.then(() => {
+    handleNext(this.props.onEnter(node, appearing), () => {
 
       this.safeSetState({ status: ENTERING }, () => {
-        promise = this.props.onEntering(node, appearing);
-        if (typeof promise !== 'object') {
-          promise = Promise.resolve()
-        }
-
-        promise.then(() => {
+        handleNext(this.props.onEntering(node, appearing), () => {
 
           this.onTransitionEnd(node, enterTimeout, () => {
             this.safeSetState({ status: ENTERED }, () => {
@@ -282,19 +281,15 @@ class Transition extends React.Component {
       return
     }
 
-    let promise = this.props.onExit(node)
-    if (typeof promise !== 'object') {
-      promise = Promise.resolve();
+    const handleNext = (maybePromise, callback) => {
+      if (isPromise(maybePromise)) maybePromise.then(callback)
+      else callback()
     }
 
-    promise.then(() => {
-      this.safeSetState({ status: EXITING }, () => {
-        promise = this.props.onExiting(node)
-        if (typeof promise !== 'object') {
-          promise = Promise.resolve()
-        }
+    handleNext(this.props.onExit(node), () => {
 
-        promise.then(() => {
+      this.safeSetState({ status: EXITING }, () => {
+        handleNext(this.props.onExiting(node), () => {
 
           this.onTransitionEnd(node, timeouts.exit, () => {
             this.safeSetState({ status: EXITED }, () => {
