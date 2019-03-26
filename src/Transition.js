@@ -250,10 +250,7 @@ class Transition extends React.Component {
     }
 
     const handleNext = (maybePromise, callback) => {
-      if (isPromise(maybePromise)) {
-        callback = this.setNextCallback(callback)
-        maybePromise.then(callback)
-      }
+      if (isPromise(maybePromise)) maybePromise.then(callback)
       else callback()
     }
 
@@ -285,7 +282,10 @@ class Transition extends React.Component {
     }
 
     const handleNext = (maybePromise, callback) => {
-      if (isPromise(maybePromise)) maybePromise.then(callback)
+      if (isPromise(maybePromise)) {
+        callback = this.setNextCallback(callback)
+        maybePromise.then(callback)
+      }
       else callback()
     }
 
